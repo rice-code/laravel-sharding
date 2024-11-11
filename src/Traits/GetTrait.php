@@ -32,6 +32,10 @@ trait GetTrait
      */
     private function getSubFieldValue($parameters)
     {
+        if (is_object($parameters)) {
+            return null;
+        }
+
         return $parameters[$this->shardingKey] ?? $this->attributes[$this->shardingKey] ?? null;
     }
 
