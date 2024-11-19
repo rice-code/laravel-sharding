@@ -1,11 +1,11 @@
 <?php
 
-namespace Rice\LSharding;
+namespace Rice\LSharding\Traits;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Expression;
 
-class QueryManager
+trait ReplaceTrait
 {
     /**
      * 替换查询指定的表.
@@ -15,14 +15,22 @@ class QueryManager
      * @param $shardingTable
      * @return void
      */
-    public static function replaceColumns(Builder $query, string $originalTable, $shardingTable): void
+    public function replaceColumns(Builder $query, string $originalTable, $shardingTable): void
     {
         $columns = $query->columns;
         if (empty($columns)) {
             return;
         }
         foreach ($columns as $idx => $column) {
-            $columnStr = str_replace($originalTable, $shardingTable, $column);
+            $lowerColumn = strtolower($column);
+            $columnStr   = str_replace($originalTable, $shardingTable, $lowerColumn);
+            $fieldInfo   = $this->getFields()[$lowerColumn];
+            if ($fieldInfo->isDistinct()) {
+                $columnStr = $fieldInfo->getName();
+                if ($fieldInfo->getAlias()) {
+                    $columnStr = sprintf('%s as %s', $columnStr, $fieldInfo->getAlias());
+                }
+            }
             if ($column instanceof Expression) {
                 $columns[$idx] = new Expression($columnStr);
 
@@ -41,7 +49,7 @@ class QueryManager
      * @param $shardingTable
      * @return void
      */
-    public static function replaceWheres(Builder $query, string $originalTable, $shardingTable): void
+    public function replaceWheres(Builder $query, string $originalTable, $shardingTable): void
     {
         $wheres = $query->wheres;
         if (empty($wheres)) {
