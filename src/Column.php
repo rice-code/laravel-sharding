@@ -16,7 +16,7 @@ class Column
 
     public function __construct(string $column)
     {
-        $lowerColumn  = strtolower($column);
+        $lowerColumn  = strtolower(trim($column));
         $this->column = $lowerColumn;
         $isDistinct   = Str::contains($column, 'distinct');
         $segments     = preg_split('/\s+as\s+/i', $column);
@@ -62,7 +62,7 @@ class Column
             return $this->alias;
         }
 
-        return $this->name;
+        return Str::after($this->name, '.');
     }
 
     public function getColumn(): ?string

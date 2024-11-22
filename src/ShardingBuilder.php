@@ -2,14 +2,15 @@
 
 namespace Rice\LSharding;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Query\Builder;
+use Rice\LSharding\Traits\ColumnTrait;
 use Illuminate\Database\Eloquent\Model;
-use Rice\LSharding\Traits\ReplaceTrait;
 use Illuminate\Database\ConnectionInterface;
 
 class ShardingBuilder
 {
-    use ReplaceTrait;
+    use ColumnTrait;
 
     protected Model $model;
     protected Builder $query;
@@ -18,6 +19,7 @@ class ShardingBuilder
      * @var Column[]
      */
     protected array $fields  = [];
+    protected array $alias   = [];
 
     public function __construct(Model $model, Builder $query)
     {
@@ -37,11 +39,12 @@ class ShardingBuilder
                 $unionQueries->unionAll($query);
             }
             $query->from($table);
+            $this->addColumns($query, $table);
             $this->replaceColumns($query, $this->model->getOriginalTable(), $table);
             $this->replaceWheres($query, $this->model->getOriginalTable(), $table);
         }
 
-        return $this->model->hydrate($this->multiTableQuery($this->model->getConnection(), $unionQueries))->all();
+        return $this->model->hydrate($this->subQuery($this->model->getConnection(), $unionQueries))->all();
     }
 
     /**
@@ -54,20 +57,28 @@ class ShardingBuilder
 
     protected function fieldFilter(): void
     {
-        foreach ($this->query->columns as $column) {
-            $this->fields[strtolower($column)] = new Column($column);
+        foreach ($this->query->columns ?? [] as $column) {
+            $field                             = new Column($column);
+            $this->fields[$field->getColumn()] = $field;
+            $this->alias[$field->getAlias()]   = $field;
         }
-        dump($this->fields);
     }
 
-    public function multiTableQuery(ConnectionInterface $connection, $unionAllQuery): array
+    public function subQuery(ConnectionInterface $connection, $unionAllQuery): array
     {
         $query = (new Builder($connection));
 
-        return $query->fromSub($unionAllQuery, 't')
+        return $query->fromSub($unionAllQuery, Str::random(6))
             ->selectRaw($this->getSelectRaw())
+            ->when($this->query->orders, function ($query) {
+                foreach ($this->query->orders as $order) {
+                    $query->orderBy($order['column'], $order['direction']);
+                }
+
+                return $query;
+            })
             ->when($this->query->groups, function ($query) {
-                return $query->groupBy(implode(',', $this->query->groups));
+                return $query->groupBy(...$this->query->groups);
             })
             ->get()
             ->all();
@@ -80,6 +91,10 @@ class ShardingBuilder
             $rawArr[] = $field->getSelectColumn();
         }
 
-        return implode(',', $rawArr);
+        if (empty($rawArr)) {
+            return '*';
+        }
+
+        return implode(',', array_unique($rawArr));
     }
 }
