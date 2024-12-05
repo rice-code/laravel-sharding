@@ -18,7 +18,7 @@ class Sharding extends Model
 
     public function suffixStrategy(array $parameters = []): void
     {
-        $this->setSuffix($this->getSuffix($parameters));
+        $this->setSuffix($this->algorithm->getSuffix($parameters));
     }
 
     public static function suffix($suffix = null): Builder

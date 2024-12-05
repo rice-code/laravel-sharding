@@ -42,7 +42,7 @@ trait OverwriteTrait
                 $groups  = [];
                 $results = [];
                 foreach ($params as $param) {
-                    $subTableName            = $this->table . '_' . $this->getSuffix($param);
+                    $subTableName            = $this->table . '_' . $this->algorithm->getSuffix($param);
                     $groups[$subTableName][] = $param;
                 }
                 foreach ($groups as $subTableName => $subTableParams) {
@@ -55,7 +55,7 @@ trait OverwriteTrait
             }
         }
 
-        $this->setSuffix($this->getSuffix($params));
+        $this->setSuffix($this->algorithm->getSuffix($params));
         $object->from($this->getTable());
 
         return parent::forwardCallTo($object, $method, $parameters);

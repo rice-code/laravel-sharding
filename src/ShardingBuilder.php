@@ -58,9 +58,12 @@ class ShardingBuilder
     protected function fieldFilter(): void
     {
         foreach ($this->query->columns ?? [] as $column) {
-            $field                             = new Column($column);
-            $this->fields[$field->getColumn()] = $field;
-            $this->alias[$field->getAlias()]   = $field;
+            // 细化处理 raw 查询字段
+            foreach (explode(',', $column) as $subColumn) {
+                $field                             = new Column($subColumn);
+                $this->fields[$field->getColumn()] = $field;
+                $this->alias[$field->getAlias()]   = $field;
+            }
         }
     }
 

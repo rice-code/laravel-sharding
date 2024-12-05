@@ -2,6 +2,8 @@
 
 namespace Rice\LSharding\Traits;
 
+use Rice\LSharding\Algorithms\Algorithm;
+
 trait FiledTrait
 {
     /**
@@ -10,13 +12,7 @@ trait FiledTrait
      * @var string
      */
     protected string $shardingKey  = 'created_at';
-    /**
-     * 分片格式.
-     *
-     * @var string
-     */
-    protected string $suffixFormat = 'ym';
 
     protected ?string $suffix      = null;
-    protected static array $tables = [];
+    protected Algorithm $algorithm;
 }

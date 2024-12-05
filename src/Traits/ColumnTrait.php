@@ -23,7 +23,7 @@ trait ColumnTrait
             return;
         }
         $addedColumns = [];
-        foreach ($query->groups as $groupField) {
+        foreach ($query->groups ?? [] as $groupField) {
             $groupField = strtolower(trim($groupField));
             if (!in_array($groupField, $columns, true)) {
                 // 别名不补列
@@ -38,7 +38,7 @@ trait ColumnTrait
             }
         }
 
-        foreach ($query->orders as $orderField) {
+        foreach ($query->orders ?? [] as $orderField) {
             $orderField = strtolower(trim($orderField['column']));
             if (!in_array($orderField, $columns, true) && !in_array($orderField, $addedColumns, true)) {
                 $fieldName                = Str::contains('.', $orderField) ? $orderField : $shardingTable . '.' . $orderField;
@@ -64,27 +64,29 @@ trait ColumnTrait
      */
     public function replaceColumns(Builder $query, string $originalTable, $shardingTable): void
     {
-        $columns = $query->columns;
-        if (empty($columns)) {
+        $columns = [];
+        if (empty($query->columns)) {
             return;
         }
-        foreach ($columns as $idx => $column) {
-            $lowerColumn = strtolower(trim($column));
-            $tableName   = Str::before($lowerColumn, '.');
-            $columnStr   = $tableName === $shardingTable ? $lowerColumn : str_replace($originalTable, $shardingTable, $lowerColumn);
-            $fieldInfo   = $this->getFields()[$lowerColumn];
-            if ($fieldInfo->isDistinct()) {
-                $columnStr = $fieldInfo->getName();
-                if ($fieldInfo->getAlias()) {
-                    $columnStr = sprintf('%s as %s', $columnStr, $fieldInfo->getAlias());
+        foreach ($query->columns as $idx => $column) {
+            foreach (explode(',', $column) as $field) {
+                $field = strtolower(trim($field));
+                $tableName = Str::before($field, '.');
+                $columnStr = $tableName === $shardingTable ? $field : str_replace($originalTable, $shardingTable, $field);
+                $fieldInfo = $this->getFields()[$field];
+                if ($fieldInfo->isDistinct()) {
+                    $columnStr = $fieldInfo->getName();
+                    if ($fieldInfo->getAlias()) {
+                        $columnStr = sprintf('%s as %s', $columnStr, $fieldInfo->getAlias());
+                    }
                 }
-            }
-            if ($column instanceof Expression) {
-                $columns[$idx] = new Expression($columnStr);
+                if ($fieldInfo->getAggFunc() && $column instanceof Expression) {
+                    $columns[] = new Expression($columnStr);
 
-                continue;
+                    continue;
+                }
+                $columns[] = $columnStr;
             }
-            $columns[$idx] = $columnStr;
         }
         $query->columns = $columns;
     }
