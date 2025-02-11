@@ -3,31 +3,23 @@
 namespace Rice\LSharding\Algorithms;
 
 use Carbon\Carbon;
-use Rice\LSharding\Sharding;
+use Illuminate\Support\Str;
 use Rice\LSharding\DatetimeSharding;
 
-class DatetimeAlgorithm implements Algorithm
+class DatetimeAlgorithm extends Algorithm
 {
-    protected Sharding $sharding;
-    protected static array $tables = [];
-
-    public function __construct(DatetimeSharding $sharding)
-    {
-        $this->sharding = $sharding;
-    }
-
     public function getTables(): array
     {
-        if (self::$tables) {
-            return self::$tables;
-        }
-        $tables         = [];
-        $lower          = Carbon::parse($this->sharding->lower());
-        $upper          = Carbon::parse($this->sharding->upper());
-        $intervalUnit   = $this->sharding->intervalUnit();
-        $intervalAmount = $this->sharding->intervalAmount();
+        /**
+         * @var $model DatetimeSharding
+         */
+        $model = $this->model;
+        $tables          = $model->queryOldTable() ? [$model->getOriginalTable()] : [];
+        [$lower, $upper] = $this->filterKeys();
+        $intervalUnit    = $model->intervalUnit();
+        $intervalAmount  = $model->intervalAmount();
         while ($lower < $upper) {
-            $tables[]       = $this->sharding->getOriginalTable() . '_' . $lower->format($this->sharding->suffixPattern());
+            $tables[]       = $model->getShardingTable($this->getSuffix([$model->shardingColumn() => $lower]));
             switch ($intervalUnit) {
                 case DatetimeSharding::UNITS['HOURS']:
                     $lower->addRealHours($intervalAmount);
@@ -50,19 +42,53 @@ class DatetimeAlgorithm implements Algorithm
             }
         }
 
-        return self::$tables = $tables;
+        return $tables;
     }
 
-    public function getSuffix($parameters): string
+    protected function filterKeys()
     {
-        $shardingValue = $this->sharding->getShardingValue($parameters);
-
-        // 创建且未赋值分表字段
-        if (!$this->sharding->exists && empty($shardingValue)) {
-            return Carbon::now()->format($this->sharding->suffixPattern());
+        /**
+         * @var $model DatetimeSharding
+         */
+        $model = $this->model;
+        $lower = Carbon::parse($model->lower());
+        $upper = Carbon::parse($model->upper());
+        if ($wheres = ($this->builder->getQuery()->wheres ?? [])) {
+            foreach ($wheres as $where) {
+                // 分片字段
+                if (Str::after($where['column'], '.') === $model->shardingColumn()) {
+                    if ('>' === $where['operator']) {
+                        $lower = Carbon::parse($where['value']);
+                    }
+                    if ('<' === $where['operator']) {
+                        $upper = Carbon::parse($where['value']);
+                    }
+                }
+            }
         }
 
-        // 创建或更新使用指定字段分表
-        return Carbon::parse($shardingValue)->format($this->sharding->suffixPattern());
+        return [$lower, $upper];
+    }
+
+    public function getSuffix($parameters): ?string
+    {
+        /**
+         * @var $model DatetimeSharding
+         */
+        $model = $this->model;
+        $shardingValue = $model->getShardingValue($parameters);
+
+        // 创建且未赋值分表字段
+        if (!$model->exists && empty($shardingValue)) {
+            return Carbon::now()->format($model->suffixPattern());
+        }
+
+        // 时间格式不正确时，返回当前时间
+        try {
+            // 创建或更新使用指定字段分表
+            return Carbon::parse($shardingValue)->format($model->suffixPattern());
+        } catch (\Exception $e) {
+            return Carbon::now()->format($model->suffixPattern());
+        }
     }
 }

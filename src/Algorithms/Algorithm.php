@@ -2,8 +2,22 @@
 
 namespace Rice\LSharding\Algorithms;
 
-interface Algorithm
+use Rice\LSharding\Sharding;
+use Illuminate\Database\Eloquent\Builder;
+
+abstract class Algorithm
 {
-    public function getTables(): array;
-    public function getSuffix($parameters): string;
+    public ?Builder $builder = null;
+    public Sharding $model;
+
+    public function __construct(Sharding $model)
+    {
+        $this->model = $model;
+    }
+
+    abstract public function getTables(): array;
+
+    abstract public function getSuffix($parameters): ?string;
+
+    abstract protected function filterKeys();
 }

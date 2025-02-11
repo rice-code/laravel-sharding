@@ -6,6 +6,16 @@ use Carbon\Carbon;
 
 trait GetTrait
 {
+    public function getModel()
+    {
+        return $this->model;
+    }
+
+    public function getQuery()
+    {
+        return $this->query;
+    }
+
     public function getOriginalTable(): string
     {
         return $this->table;
@@ -26,6 +36,11 @@ trait GetTrait
             return null;
         }
 
-        return $parameters[$this->shardingKey] ?? $this->attributes[$this->shardingKey] ?? null;
+        return $parameters[$this->shardingColumn()] ?? $this->attributes[$this->shardingColumn()] ?? null;
+    }
+
+    public function getShardingTable($suffix): string
+    {
+        return sprintf('%s_%s', $this->getOriginalTable(), $suffix);
     }
 }

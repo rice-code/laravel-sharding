@@ -2,6 +2,7 @@
 
 namespace Rice\LSharding\Traits;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Rice\LSharding\EloquentBuilder;
@@ -22,12 +23,12 @@ trait OverwriteTrait
 
     public function getTable(): string
     {
-        if ($this->suffix) {
+        if (!is_null($this->suffix)) {
             if (Str::endsWith($this->table, $this->suffix)) {
                 return $this->table;
             }
 
-            return $this->table . '_' . $this->suffix;
+            return $this->getShardingTable($this->suffix);
         }
 
         return parent::getTable();
@@ -42,7 +43,7 @@ trait OverwriteTrait
                 $groups  = [];
                 $results = [];
                 foreach ($params as $param) {
-                    $subTableName            = $this->table . '_' . $this->algorithm->getSuffix($param);
+                    $subTableName            = $this->getShardingTable($this->algorithm->getSuffix($param));
                     $groups[$subTableName][] = $param;
                 }
                 foreach ($groups as $subTableName => $subTableParams) {
@@ -57,7 +58,6 @@ trait OverwriteTrait
 
         $this->setSuffix($this->algorithm->getSuffix($params));
         $object->from($this->getTable());
-
         return parent::forwardCallTo($object, $method, $parameters);
     }
 

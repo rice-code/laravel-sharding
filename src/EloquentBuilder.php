@@ -9,8 +9,7 @@ class EloquentBuilder extends Builder
     public function getModels($columns = ['*'])
     {
         if ($this->model instanceof Sharding) {
-
-            return (new ShardingBuilder($this->model, $this->query))->getModels();
+            return (new ShardingBuilder($this))->getModels();
         }
 
         return parent::getModels($columns);

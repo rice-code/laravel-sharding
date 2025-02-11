@@ -14,10 +14,10 @@ abstract class DatetimeSharding extends Sharding
         'YEARS'  => 5,
     ];
 
-    public function __construct()
+    public function __construct(array $attributes = [])
     {
         $this->algorithm = new DatetimeAlgorithm($this);
-        parent::__construct();
+        parent::__construct($attributes);
     }
     /**
      * 时间分片下界值
@@ -41,6 +41,15 @@ abstract class DatetimeSharding extends Sharding
     abstract public function suffixPattern();
 
     /**
+     *
+     * @return string
+     */
+    public function shardingColumn(): string
+    {
+        return 'created_at';
+    }
+
+    /**
      * 分片键时间间隔，超过该时间间隔将进入下一分片.
      *
      * @return int
@@ -58,5 +67,15 @@ abstract class DatetimeSharding extends Sharding
     public function intervalUnit(): int
     {
         return self::UNITS['MONTHS'];
+    }
+
+    /**
+     * 是否查询旧表（旧数据未做迁移）
+     *
+     * @return bool
+     */
+    public function queryOldTable(): bool
+    {
+        return false;
     }
 }

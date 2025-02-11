@@ -3,17 +3,18 @@
 namespace Rice\LSharding;
 
 use Illuminate\Support\Str;
-use Illuminate\Database\Query\Builder;
 use Rice\LSharding\Traits\ColumnTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class ShardingBuilder
 {
     use ColumnTrait;
 
     protected Model $model;
-    protected Builder $query;
+    protected QueryBuilder $query;
     protected array $queries;
     /**
      * @var Column[]
@@ -21,16 +22,20 @@ class ShardingBuilder
     protected array $fields  = [];
     protected array $alias   = [];
 
-    public function __construct(Model $model, Builder $query)
+    public function __construct(Builder $builder)
     {
-        $this->model = $model;
-        $this->query = $query;
+        $this->model = $builder->getModel();
+        $this->query = $builder->getQuery();
+        if ($this->model instanceof Sharding) {
+            $this->model->algorithm->builder = $builder;
+        }
         $this->fieldFilter();
     }
 
     public function getModels()
     {
         $unionQueries = null;
+
         foreach ($this->model->getTables() as $table) {
             $query = clone $this->query;
             if (is_null($unionQueries)) {
@@ -38,10 +43,18 @@ class ShardingBuilder
             } else {
                 $unionQueries->unionAll($query);
             }
+
+            $originalTable = $this->model->getOriginalTable();
+
             $query->from($table);
+
+            if ($table === $originalTable) {
+                continue;
+            }
+
             $this->addColumns($query, $table);
-            $this->replaceColumns($query, $this->model->getOriginalTable(), $table);
-            $this->replaceWheres($query, $this->model->getOriginalTable(), $table);
+            $this->replaceColumns($query, $originalTable, $table);
+            $this->replaceWheres($query, $originalTable, $table);
         }
 
         return $this->model->hydrate($this->subQuery($this->model->getConnection(), $unionQueries))->all();
@@ -69,7 +82,7 @@ class ShardingBuilder
 
     public function subQuery(ConnectionInterface $connection, $unionAllQuery): array
     {
-        $query = (new Builder($connection));
+        $query = (new QueryBuilder($connection));
 
         return $query->fromSub($unionAllQuery, Str::random(6))
             ->selectRaw($this->getSelectRaw())

@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Rice\LSharding\Traits\OverwriteTrait;
 
-class Sharding extends Model
+abstract class Sharding extends Model
 {
     use SetTrait;
     use GetTrait;
     use FiledTrait;
     use OverwriteTrait;
+
+    abstract public function shardingColumn(): string;
 
     public function suffixStrategy(array $parameters = []): void
     {

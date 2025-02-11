@@ -14,5 +14,5 @@ trait FiledTrait
     protected string $shardingKey  = 'created_at';
 
     protected ?string $suffix      = null;
-    protected Algorithm $algorithm;
+    public Algorithm $algorithm;
 }
