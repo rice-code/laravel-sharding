@@ -53,5 +53,12 @@ class Users extends DatetimeSharding
 - [x] 支持 `Model` 级别的数据分表查询
 - [x] 时间分表算法
 - [x] MySQL distinct 语法在分表统计不准确问题
-- [ ] 测试用例
+- [x] 测试用例
+
+# 实现思路
+
+1. `Illuminate\Database\Eloquent\Model` -> `Rice\LSharding\Sharding` 继承 `Model` 类
+2. 重写 `__construct`, `__set`, `getTable`, `forwardCallTo`, `newEloquentBuilder` 方法
+3. 继承 `Rice\LSharding\Sharding` 实现对应的分表类(`DatetimeSharding`, `ModSharding`, `HashModSharding`)
+
 
