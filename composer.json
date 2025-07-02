@@ -13,7 +13,7 @@
     "php": ">=7.4",
     "ext-json": "*",
     "ext-bcmath": "*",
-    "nesbot/carbon": "2.x-dev"
+    "nesbot/carbon": "^2.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9",
