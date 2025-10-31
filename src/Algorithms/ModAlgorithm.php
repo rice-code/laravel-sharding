@@ -34,7 +34,6 @@ class ModAlgorithm extends Algorithm
             foreach ($wheres as $where) {
                 // 分片字段
                 if (Str::after($where['column'], '.') === $model->shardingColumn()) {
-                    dump($where);
                     if ($where['type'] === 'In' || $where['type'] === 'InRaw') {
                         foreach ($where['values'] as $value) {
                             $keys[] = $this->mod($value);

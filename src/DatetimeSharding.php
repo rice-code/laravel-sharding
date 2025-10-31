@@ -34,13 +34,6 @@ abstract class DatetimeSharding extends Sharding
     abstract public function upper();
 
     /**
-     * 分片数据源或真实表的后缀格式.
-     *
-     * @return mixed
-     */
-    abstract public function suffixPattern();
-
-    /**
      *
      * @return string
      */
@@ -67,15 +60,5 @@ abstract class DatetimeSharding extends Sharding
     public function intervalUnit(): int
     {
         return self::UNITS['MONTHS'];
-    }
-
-    /**
-     * 是否查询旧表（旧数据未做迁移）
-     *
-     * @return bool
-     */
-    public function queryOldTable(): bool
-    {
-        return false;
     }
 }

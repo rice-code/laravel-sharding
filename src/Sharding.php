@@ -16,6 +16,18 @@ abstract class Sharding extends Model
     use FiledTrait;
     use OverwriteTrait;
 
+    /**
+     * 分片数据源或真实表的后缀格式.
+     *
+     * @return mixed
+     */
+    abstract public function suffixPattern();
+
+    /**
+     * 分片字段
+     *
+     * @return string
+     */
     abstract public function shardingColumn(): string;
 
     public function suffixStrategy(array $parameters = []): void
@@ -29,5 +41,15 @@ abstract class Sharding extends Model
         $instance->setSuffix($suffix);
 
         return $instance->newQuery();
+    }
+
+    /**
+     * 是否查询旧表（旧数据未做迁移）
+     *
+     * @return bool
+     */
+    public function queryOldTable(): bool
+    {
+        return false;
     }
 }
