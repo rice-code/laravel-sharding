@@ -1,6 +1,12 @@
 name: Tests
 
 on:
+  workflow_dispatch:  # 手动触发
+    inputs:  # 可选：手动触发时的输入参数
+      name:
+        description: 'rice-code'
+        required: true
+        default: 'rice-code'
   push:
     branches:
       - main
